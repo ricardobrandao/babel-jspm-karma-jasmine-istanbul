@@ -1,170 +1,119 @@
-Babel JSPM Karma Jasmine Istanbul Coverage Test
-===============================================
-
-A sample repo to show what's need to get HTML code coverage reports working when using [Babel](https://babeljs.io/), [JSPM](http://jspm.io/), [Karma](http://karma-runner.github.io/), [Jasmine](http://jasmine.github.io/) and [Istanbul](https://github.com/gotwarlost/istanbul).
+# Babel JSPM Karma Jasmine Istanbul
+A sample repo to show what's need to get HTML code coverage reports working when using **[Babel](https://babeljs.io/)**, **[JSPM](http://jspm.io/)**, **[Karma](http://karma-runner.github.io/)**, **[Jasmine](http://jasmine.github.io/)** and **[Istanbul](https://github.com/gotwarlost/istanbul)**.
 
 To install and run:
 
-	$ npm install -g jspm karma-cli
-	$ npm install
-	$ karma start karma.conf.js
-	$ open coverage/phantomjs/index.html
+```
+$ npm install
+$ npm run test
+$ open coverage/phantomjs/index.html
+```
 
-Tutorial
---------
-
-When living on the edge, getting the tooling of the past to work as expected requires a bit of extra work. I'll walk you through the steps you need to get set up.
-
-### The goal
-
+## The goal
 Set up Karma testing with code coverage for a project that uses Babel, JSPM and Jasmine.
 
-### The problem
-
-Both your tests and your code written in ES6 need to be transpiled to ES5 before being run. However, you want your code coverage report to show you the files as they were before transpilation, so you recognize the content.
-
-### The solution
-
-Use source maps to make the generated HTML match you're original files.
-
-Bootstrapping your project
---------------------------
-
+## Setting up JSPM
 Make sure you have jspm installed globally.
 
-	$ npm install -g jspm
+```
+$ npm install -g jspm
+```
 
 Init JSPM:
 
-	$ jspm init
-
-Use the defaults for everything except `server baseURL`, set this to `src`. It should look something like this:
-
 ```
 $ jspm init
-Package.json file does not exist, create it? [yes]:
-Would you like jspm to prefix the jspm package.json properties under jspm? [yes]:
-Enter server baseURL (public folder path) [./]:src
-Enter jspm packages folder [src/jspm_packages]:
-Enter config file path [src/config.js]:
-Configuration file src/config.js doesn't exist, create it? [yes]:
-Enter client baseURL (public folder URL) [/]:
-Which ES6 transpiler would you like to use, Traceur or Babel? [babel]:
 ```
 
-With package.json created, also lock down the version of jspm:
-
-	$ npm install --save-dev jspm
-
-As JSPM currently defaults to Babel 5, update the `jspm` key in `package.json` to use Babel 6:
-
-```js
-  "jspm": {
-    "directories": {
-      "baseURL": "src"
-    },
-    "devDependencies": {
-      "babel": "npm:babel-core@^6.3.17",
-      "babel-runtime": "npm:babel-runtime@^6.3.17",
-      "core-js": "npm:core-js@^1.1.4"
-    }
-  }
-```
-
-As the purpose is to get tests set up, we'll start by writing a simple test. In `src/hello.spec.js`, enter:
+## Creating tests
+A sample test is located in `test/app.spec.js`:
 
 ```js
 'use strict';
 
-import {hello} from './hello';
+import App from 'src/app';
 
 describe('hello', () => {
 
-	it('should return Hello Foo', function () {
-		expect(hello()).toEqual('Hello Foo');
-	});
+    it('should return Hello Foo', function() {
+        expect(new App().hello()).toEqual('Hello, World!');
+    });
 });
-
 ```
 
-We're using a little bit of ES6 here, to show that your tests can also be written in ES6.
-
-Go ahead an create the implementation at the same time. In `src/hello.js` enter:
+A simple App is can be found at `src/app.js`:
 
 ```js
-'use strict';
+import 'bootstrap';
+import 'bootstrap/css/bootstrap.css!';
 
-export function hello() {
-	let name = 'Foo';
-	let greeting = `Hello ${name}`;
+class App {
+    constructor() {
 
-	if (false) {
-		// Should not be covered
-		return 'Good bye';
-	}
+    }
 
-	return greeting;
+    hello() {
+        return 'Hello, World!';
+    }
 }
+
+export default App;
 ```
 
+## Setting up the test environment
+Install the basics needed for Jasmine and Karma with PhantomJS and JSPM:
 
-Setting up the test environment
--------------------------------
+```
+$ npm install --save-dev phantomjs jasmine jasmine-core karma karma-jasmine karma-phantomjs-launcher karma-jspm
+```
 
-With our test written, it's time to start adding a few test related dependencies, so we can run it.
+Install the basics needed for transpiling with Babel:
 
-First, let's install the basics needed for Jasmine and Karma with PhantomJS:
-
-	$ npm install -g karma-cli
-	$ npm install --save-dev phantomjs jasmine jasmine-core karma karma-jasmine karma-phantomjs-launcher karma-jspm
+```
+$ npm install --save-dev babel-core babel-preset-es2015 karma-babel-preprocessor
+```
 
 Also, create a simple `karma.conf.js`:
 
 ```js
 /* global module */
-module.exports = function (config) {
-	'use strict';
-	config.set({
-		autoWatch: true,
-		singleRun: true,
+module.exports = function(config) {
+    'use strict';
+    config.set({
+        autoWatch: true,
+        singleRun: true,
 
-		frameworks: ['jspm', 'jasmine'],
+        frameworks: ['jspm', 'jasmine'],
 
-		jspm: {
-			config: 'src/config.js',
-			loadFiles: [
-				'src/*.spec.js'
-			],
-			serveFiles: [
-				'src/!(*spec).js'
-			]
-		},
+        jspm: {
+            config: 'config.js',
+            paths: {
+                '*': '*'
+            },
+            loadFiles: [
+                'test/**/*.spec.js'
+            ],
+            serveFiles: [
+                'src/**/*.js'
+            ]
+        },
 
-		proxies: {
-			'/src/': '/base/src/',
-			'/jspm_packages/': '/src/jspm_packages/'
-		},
+        proxies: {
+            '/src/': '/base/src/',
+            '/test/': '/base/test/',
+            '/jspm_packages': '/base/jspm_packages'
+        },
 
-		browsers: ['PhantomJS'],
+        preprocessors: {
+            'src/**/*.js': ['babel']
+        },
 
-		reporters: ['progress'],
+        reporters: ['progress'],
 
-	});
+        browsers: ['PhantomJS']
 
+    });
 };
-
-```
-
-At this point, you should be able to run `karma start karma.conf.js`, but it will error without much explanation, as your transpiling isn't quite ready yet. You need to install `babel-core` and `karma-babel-preprocessor`:
-
-	$ npm install --save-dev babel-core babel-preset-es2015 babel-polyfill karma-babel-preprocessor
-
-Load the polyfill in your Karma config:
-
-```js
-files: [
-    'node_modules/babel-polyfill/dist/polyfill.js'
-]
 ```
 
 Set up your Babel config in `.babelrc`:
@@ -177,96 +126,100 @@ Set up your Babel config in `.babelrc`:
 
 This is needed since SystemJS depends on `Function.bind()`, which is not supported in PhantomJS.
 
-If you rerun Karma, your tests should be passing. If you didn't care about HTML coverage reports, you could go on your way, and have a fully working ES6, Karma, Jasmine, JSPM and Babel setup. Not too bad!
+At this point we have a fully working ES2015, Karma, Jasmine, JSPM and Babel setup.
 
-Coverage
---------
+## Coverage
+For coverage reports, we'll use Istanbul and the Karma coverage plugin:
 
-For coverage reports, we'll use Istanbul and the Karma coverage  plugin:
-
-	$ npm install --save-dev istanbul karma-coverage
+```
+$ npm install --save-dev istanbul karma-coverage
+```
 
 You also need to update your karma config:
 
 ```js
+preprocessors: {
+    'src/!(*spec).js': ['babel', 'coverage']
+},
 
 reporters: ['progress', 'coverage'],
 
-preprocessors: {
-	'src/!(*spec).js': ['babel', 'coverage']
-},
-
 coverageReporter: {
-	reporters: [
-		{
-			type: 'text-summary'
-		},
-		{
-			type: 'html',
-			dir: 'coverage/'
-		}
-	]
+    reporters: [
+        {
+            type: 'text-summary'
+        },
+        {
+            type: 'html',
+            dir: 'coverage/'
+        }
+    ]
 }
-
 ```
 
-If you run your tests now, you should find a coverage report in the `coverage` folder, with proper highlighting of covered code. However, what you're seeing is the transpiled code. For this simple code, that shouldn't be too hard to mentally connect to your source files, but wouldn't it better if you could be looking at ES6 code instead? Let's fix that!
+If you run your tests now, you should find a coverage report in the `coverage` folder, with proper highlighting of covered code. However, what you're seeing is the transpiled code.
 
-You'll need a couple more dependencies. First, we'll install [isparta](https://github.com/douglasduteil/isparta), which is designed to be used with Istanbul with Babel and Karma/Karma Coverage:
+In order to see the original code we will need a couple more dependencies. First, we'll install [isparta](https://github.com/douglasduteil/isparta), which is designed to be used with Istanbul with Babel and Karma/Karma Coverage:
 
-	$ npm install --save-dev isparta
+```
+$ npm install --save-dev isparta
+```
 
 isparta works as a custom instrumentor, which must be registred in Karma config:
 
 ```js
 coverageReporter: {
-	instrumenters: {isparta: require('isparta')},
-	instrumenter: {
-		'src/*.js': 'isparta'
-	},
+    instrumenters: {isparta: require('isparta')},
+    instrumenter: {
+        'src/*.js': 'isparta'
+    },
 
-	reporters: [
-		{
-			type: 'text-summary',
-		},
-		{
-			type: 'html',
-			dir: 'coverage/',
-		}
-	]
+    reporters: [
+        {
+            type: 'text-summary',
+        },
+        {
+            type: 'html',
+            dir: 'coverage/',
+        }
+    ]
 }
 ```
 
-If you're reading this in the future, your coverage report may already be showing you ES6 code. As I'm stuck in the past, I need to use a custom version of `karma-coverage`. Update your `package.json` to use `douglasduteil/karma-coverage#next`:
+ATM in order to show the original (i.e. ES2015) code in the coverage report we'll need to use a custom version of `karma-coverage`. Update your `package.json` to use `douglasduteil/karma-coverage#next`:
 
-	"karma-coverage": "douglasduteil/karma-coverage#next"
+```
+"karma-coverage": "douglasduteil/karma-coverage#next"
+```
 
-Now you're almost there. Your tests are running, you get coverage reports, and their all in beautiful ES6. There's one problem, however. If you look closely at the coverage for `hello.js`, you'll see that the coverage is highlighting the wrong lines. We can fix this by adding source maps.
+Now the tests are running, we get the coverage reports, and their all in ES2015. However, if you look closely at the coverage for `app.js`, you'll see that the coverage is highlighting the wrong lines. We can fix this by adding source maps.
 
-	$ npm install --save-dev karma-sourcemap-loader
+```
+$ npm install --save-dev karma-sourcemap-loader
+```
 
 In Karma config:
 
 ```js
 
 preprocessors: {
-	'src/!(*spec).js': ['babel', 'sourcemap', 'coverage']
+    'src/!(*spec).js': ['babel', 'sourcemap', 'coverage']
 },
 
-
 babelPreprocessor: {
-	options: {
-		sourceMap: 'inline',
-		blacklist: ['useStrict']
-	},
-	sourceFileName: function(file) {
-		return file.originalPath;
-	}
+    options: {
+        sourceMap: 'inline'
+    },
+    sourceFileName: function(file) {
+        return file.originalPath;
+    }
 },
 ```
 
-Again, if you're living in the future, this might already be working for you. If not, you need to use another custom version of a dependency, this time Istanbul:
+Again, ATM we need to use a custom version of a dependency, this time Istanbul:
 
-	"istanbul": "gotwarlost/istanbul.git#source-map"
+```
+"istanbul": "gotwarlost/istanbul.git#source-map"
+```
 
-Boom! If you run Karma again, line highlighting should also be working.
+Running Karma again shows that the line highlighting is also working.

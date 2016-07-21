@@ -1,3 +1,4 @@
-node_modules
-coverage
-src/jspm_packages
+node_modules/
+jspm_packages/
+
+coverage/

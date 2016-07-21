@@ -1,69 +1,64 @@
 /* global module */
-module.exports = function (config) {
-	'use strict';
-	config.set({
-		autoWatch: true,
-		singleRun: true,
+module.exports = function(config) {
+    'use strict';
+    config.set({
+        autoWatch: true,
+        singleRun: true,
 
-		frameworks: ['jspm', 'jasmine'],
+        frameworks: ['jspm', 'jasmine'],
 
-		files: [
-			'node_modules/babel-polyfill/dist/polyfill.js'
-		],
+        jspm: {
+            config: 'config.js',
+            paths: {
+                '*': '*'
+            },
+            loadFiles: [
+                'test/**/*.spec.js'
+            ],
+            serveFiles: [
+                'src/**/*.js'
+            ]
+        },
 
-		jspm: {
-			config: 'src/config.js',
-			loadFiles: [
-				'src/*.spec.js'
-			],
-			serveFiles: [
-				'src/!(*spec).js'
-			]
-		},
+        proxies: {
+            '/src/': '/base/src/',
+            '/test/': '/base/test/',
+            '/jspm_packages': '/base/jspm_packages'
+        },
 
-		proxies: {
-			'/src/': '/base/src/',
-			'/jspm_packages/': '/src/jspm_packages/'
-		},
+        preprocessors: {
+            'src/**/*.js': ['babel', 'sourcemap', 'coverage']
+        },
 
-		browsers: ['PhantomJS'],
+        babelPreprocessor: {
+            options: {
+                sourceMap: 'inline'
+            },
+            sourceFileName: function(file) {
+                return file.originalPath;
+            }
+        },
 
-		preprocessors: {
-			'src/!(*spec).js': ['babel', 'sourcemap', 'coverage']
-		},
+        reporters: ['progress', 'coverage'],
 
-		babelPreprocessor: {
-			options: {
-				sourceMap: 'inline'
-			},
-			sourceFileName: function(file) {
-				return file.originalPath;
-			}
-		},
+        coverageReporter: {
+          instrumenters: {isparta: require('isparta')},
+        	instrumenter: {
+        		'src/*.js': 'isparta'
+        	},
 
-		reporters: ['coverage', 'progress'],
+        	reporters: [
+        		{
+        			type: 'text-summary'
+        		},
+        		{
+        			type: 'html',
+        			dir: 'coverage/'
+        		}
+        	]
+        },
 
-		coverageReporter: {
-			instrumenters: {isparta: require('isparta')},
-			instrumenter: {
-				'src/*.js': 'isparta'
-			},
+        browsers: ['PhantomJS']
 
-			reporters: [
-				{
-					type: 'text-summary',
-					subdir: normalizationBrowserName
-				},
-				{
-					type: 'html',
-					dir: 'coverage/',
-					subdir: normalizationBrowserName
-				}
-			]
-		}
-	});
-
-	function normalizationBrowserName(browser) {
-		return browser.toLowerCase().split(/[ /-]/)[0];
-	}
+    });
 };
